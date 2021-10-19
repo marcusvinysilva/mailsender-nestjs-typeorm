@@ -24,7 +24,7 @@ export class AuthController {
   ): Promise<{ message: string }> {
     await this.authService.signUp(createUserDto);
     return {
-      message: 'Cadastro realizado com seucesso',
+      message: 'Cadastro realizado com sucesso',
     };
   }
 
@@ -40,4 +40,9 @@ export class AuthController {
   getMe(@GetUser() user: User): User {
     return user;
   }
+
+  // Fazer
+  // Update do usuário logado
+  // Delete da conta do usuário logado
+  // Buscar outros usuários apenas pelo nome
 }
