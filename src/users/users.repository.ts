@@ -9,11 +9,40 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { CredentialsDto } from 'src/auth/credentials.dto';
+import { FindUsersQueryDto } from './dtos/find-users-query.dto';
 
 @EntityRepository(User)
 export class UserRepository extends Repository<User> {
   private async hashPassword(password: string, salt: string): Promise<string> {
     return bcrypt.hash(password, salt);
+  }
+
+  async findUsers(
+    queryDto: FindUsersQueryDto,
+  ): Promise<{ users: User[]; total: number }> {
+    queryDto.page = queryDto.page < 1 ? 1 : queryDto.page;
+    queryDto.limit = queryDto.limit > 100 ? 100 : queryDto.limit;
+    queryDto.status = queryDto.status === undefined ? true : queryDto.status;
+
+    const { email, name, status, role } = queryDto;
+    const query = this.createQueryBuilder('user');
+    query.where('user.status = :status', { status });
+
+    if (email)
+      query.andWhere('user.email ILIKE :email', { email: `%${email}%` });
+
+    if (name) query.andWhere('user.name ILIKE :name', { name: `%${name}%` });
+
+    if (role) query.andWhere('user.role ILIKE :role', { role });
+
+    query.skip((queryDto.page - 1) * queryDto.limit);
+    query.take(queryDto.limit);
+    query.orderBy(queryDto.sort ? JSON.parse(queryDto.sort) : undefined);
+    query.select(['user.name', 'user.email', 'user.role', 'user.status']);
+
+    const [users, total] = await query.getManyAndCount();
+
+    return { users, total };
   }
 
   async createUser(
